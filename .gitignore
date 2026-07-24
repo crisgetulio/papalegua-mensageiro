@@ -1,0 +1,17 @@
+# Chaves e Credenciais
+.env
+*.key
+*.pem
+secrets.json
+config_secreta.json
+backup_*.json
+
+# Pastas de dependências
+node_modules/
+venv/
+__pycache__/
+.DS_Store
+
+# Logs e temporários
+*.log
+tmp/   

@@ -1,0 +1,204 @@
+package com.papalegua.app;
+
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.squareup.picasso.Picasso;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ContactsActivity extends AppCompatActivity {
+    private ListView listView;
+    private SwipeRefreshLayout swipeRefresh;
+    private TextView tvUsername;
+    private SharedPreferences prefs;
+    private List<Contact> contacts = new ArrayList<>();
+    private ContactAdapter adapter;
+
+    static class Contact {
+        String id;
+        String username;
+        String avatarUrl;
+        boolean online;
+
+        Contact(String id, String username, String avatarUrl) {
+            this.id = id;
+            this.username = username;
+            this.avatarUrl = avatarUrl;
+        }
+    }
+
+    class ContactAdapter extends BaseAdapter {
+        private LayoutInflater inflater;
+
+        ContactAdapter() {
+            inflater = LayoutInflater.from(ContactsActivity.this);
+        }
+
+        @Override
+        public int getCount() { return contacts.size(); }
+
+        @Override
+        public Object getItem(int position) { return contacts.get(position); }
+
+        @Override
+        public long getItemId(int position) { return position; }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder;
+            if (convertView == null) {
+                convertView = inflater.inflate(R.layout.item_contact, parent, false);
+                holder = new ViewHolder();
+                holder.ivAvatar = convertView.findViewById(R.id.ivAvatar);
+                holder.tvName = convertView.findViewById(R.id.tvName);
+                holder.tvStatus = convertView.findViewById(R.id.tvStatus);
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            Contact c = contacts.get(position);
+            holder.tvName.setText(c.username);
+            holder.tvStatus.setText(c.online ? "🟢 Online" : "⚪ Offline");
+            holder.tvStatus.setTextColor(c.online ? 0xFF22C55E : 0xFF64748B);
+
+            if (c.avatarUrl != null && !c.avatarUrl.isEmpty() && !c.avatarUrl.equals("/uploads/avatars/default.png")) {
+                String url = "https://papalegua.duckdns.org" + c.avatarUrl;
+                Picasso.get().load(url).placeholder(R.drawable.ic_avatar).into(holder.ivAvatar);
+            } else {
+                holder.ivAvatar.setImageResource(R.drawable.ic_avatar);
+            }
+
+            return convertView;
+        }
+
+        class ViewHolder {
+            ImageView ivAvatar;
+            TextView tvName;
+            TextView tvStatus;
+        }
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_contacts);
+
+        prefs = getSharedPreferences("papalegua", MODE_PRIVATE);
+
+        if (!prefs.getBoolean("logged", false)) {
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+            return;
+        }
+
+        tvUsername = findViewById(R.id.tvUsername);
+        tvUsername.setText(prefs.getString("username", ""));
+
+        listView = findViewById(R.id.listView);
+        swipeRefresh = findViewById(R.id.swipeRefresh);
+
+        adapter = new ContactAdapter();
+        listView.setAdapter(adapter);
+
+        findViewById(R.id.btnLogout).setOnClickListener(v -> {
+            String savedPrivateKey = prefs.getString("privateKey", null);
+            String savedSeedPhrase = prefs.getString("seedPhrase", null);
+            SharedPreferences.Editor logoutEditor = prefs.edit().clear();
+            if (savedPrivateKey != null) logoutEditor.putString("privateKey", savedPrivateKey);
+            if (savedSeedPhrase != null) logoutEditor.putString("seedPhrase", savedSeedPhrase);
+            logoutEditor.apply();
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+        });
+
+        swipeRefresh.setOnRefreshListener(this::loadContacts);
+        loadContacts();
+
+        listView.setOnItemClickListener((parent, view, position, id) -> {
+            Contact c = contacts.get(position);
+            Intent intent = new Intent(this, ChatActivity.class);
+            intent.putExtra("contactId", c.id);
+            intent.putExtra("contactName", c.username);
+            startActivity(intent);
+        });
+    }
+
+    private void loadContacts() {
+        swipeRefresh.setRefreshing(true);
+        new Thread(() -> {
+            try {
+                String cookie = prefs.getString("cookie", "");
+                URL url = new URL("https://papalegua.duckdns.org/api/users");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                if (!cookie.isEmpty()) conn.setRequestProperty("Cookie", cookie);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 401) {
+                    runOnUiThread(() -> {
+                        String savedPrivateKey = prefs.getString("privateKey", null);
+            String savedSeedPhrase = prefs.getString("seedPhrase", null);
+            SharedPreferences.Editor logoutEditor = prefs.edit().clear();
+            if (savedPrivateKey != null) logoutEditor.putString("privateKey", savedPrivateKey);
+            if (savedSeedPhrase != null) logoutEditor.putString("seedPhrase", savedSeedPhrase);
+            logoutEditor.apply();
+                        startActivity(new Intent(this, MainActivity.class));
+                        finish();
+                    });
+                    return;
+                }
+
+                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) response.append(line);
+                br.close();
+
+                JSONArray users = new JSONArray(response.toString());
+                contacts.clear();
+
+                for (int i = 0; i < users.length(); i++) {
+                    JSONObject u = users.getJSONObject(i);
+                    contacts.add(new Contact(
+                        u.getString("id"),
+                        u.getString("username"),
+                        u.optString("avatar_url", "")
+                    ));
+                }
+
+                runOnUiThread(() -> {
+                    adapter.notifyDataSetChanged();
+                    swipeRefresh.setRefreshing(false);
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    swipeRefresh.setRefreshing(false);
+                    Toast.makeText(this, "Erro: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+}

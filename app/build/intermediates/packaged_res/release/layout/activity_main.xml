@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="#111827">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="💬" android:textSize="64dp" android:layout_marginBottom="16dp"/>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Papalegua" android:textColor="#d4af37" android:textSize="28sp"
+        android:textStyle="bold" android:layout_marginBottom="32dp"/>
+    <EditText android:id="@+id/etUsername" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:hint="Usuário"
+        android:textColorHint="#64748b" android:textColor="#f1f5f9"
+        android:background="@drawable/bg_edit" android:padding="12dp"
+        android:layout_marginBottom="12dp"/>
+    <EditText android:id="@+id/etPassword" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:hint="Senha"
+        android:textColorHint="#64748b" android:textColor="#f1f5f9"
+        android:inputType="textPassword" android:background="@drawable/bg_edit"
+        android:padding="12dp" android:layout_marginBottom="24dp"/>
+    <Button android:id="@+id/btnLogin" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="Entrar"
+        android:textColor="#111827" android:background="@drawable/bg_button"
+        android:padding="12dp" android:textSize="16sp" android:textStyle="bold"/>
+    <ProgressBar android:id="@+id/progressBar" android:layout_width="wrap_content"
+        android:layout_height="wrap_content" android:layout_marginTop="16dp"
+        android:visibility="gone"/>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="ou" android:textColor="#64748b" android:layout_margin="16dp"/>
+    <Button android:id="@+id/btnGoogleLogin" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="Entrar com Google"
+        android:textColor="#d4af37" android:background="@drawable/bg_button_outline"
+        android:padding="12dp" android:textSize="14sp" android:layout_marginBottom="12dp"/>
+    <Button android:id="@+id/btnRegister" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="Criar conta"
+        android:textColor="#d4af37" android:background="@drawable/bg_button_outline"
+        android:padding="12dp" android:textSize="14sp"/>
+</LinearLayout>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "304779877488",
+    "project_id": "papalegua-8b6eb",
+    "storage_bucket": "papalegua-8b6eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:304779877488:android:50c47f515218d887b0a8b5",
+        "android_client_info": {
+          "package_name": "com.papalegua.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiFrzh3c0KKW8Pqo9s36-MBUyVbZFOzZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

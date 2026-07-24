@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">304779877488</string>
+    <string name="google_api_key" translatable="false">AIzaSyCiFrzh3c0KKW8Pqo9s36-MBUyVbZFOzZU</string>
+    <string name="google_app_id" translatable="false">1:304779877488:android:50c47f515218d887b0a8b5</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCiFrzh3c0KKW8Pqo9s36-MBUyVbZFOzZU</string>
+    <string name="google_storage_bucket" translatable="false">papalegua-8b6eb.firebasestorage.app</string>
+    <string name="project_id" translatable="false">papalegua-8b6eb</string>
+</resources>

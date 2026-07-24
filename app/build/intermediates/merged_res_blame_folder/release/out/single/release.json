@@ -1,0 +1,58 @@
+[
+    {
+        "merged": "com.papalegua.app-merged_res-5:/layout_activity_main.xml.flat",
+        "source": "com.papalegua.app-main-6:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/layout_activity_register.xml.flat",
+        "source": "com.papalegua.app-main-6:/layout/activity_register.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_ic_launcher.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/ic_launcher.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_ic_avatar.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/ic_avatar.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/layout_item_contact.xml.flat",
+        "source": "com.papalegua.app-main-6:/layout/item_contact.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_ic_launcher_round.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_bg_edit.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/bg_edit.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/layout_activity_chat.xml.flat",
+        "source": "com.papalegua.app-main-6:/layout/activity_chat.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_bg_message_me.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/bg_message_me.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/layout_item_message.xml.flat",
+        "source": "com.papalegua.app-main-6:/layout/item_message.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_bg_button.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/bg_button.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_bg_button_outline.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/bg_button_outline.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/layout_activity_contacts.xml.flat",
+        "source": "com.papalegua.app-main-6:/layout/activity_contacts.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_bg_message_other.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/bg_message_other.xml"
+    }
+]

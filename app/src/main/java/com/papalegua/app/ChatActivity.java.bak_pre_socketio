@@ -1,0 +1,495 @@
+package com.papalegua.app;
+
+import android.Manifest;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import com.squareup.picasso.Picasso;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
+import android.util.Base64;
+
+public class ChatActivity extends AppCompatActivity {
+    private ListView listView;
+    private EditText etMessage;
+    private Button btnSend, btnBack, btnCall, btnVideoCall;
+    private ImageButton btnAudio;
+    private TextView tvContactName, tvConnectionStatus;
+    private SharedPreferences prefs;
+    private List<MessageItem> messages = new ArrayList<>();
+    private MessageAdapter adapter;
+    private int contactId;
+    private String contactName;
+    private int myId;
+    private String cookie;
+    private MediaRecorder mediaRecorder;
+    private boolean isRecording = false;
+    private String currentAudioPath;
+
+    static class MessageItem {
+        int id, fromUserId, toUserId;
+        String text, type, url, audioUrl, name;
+        long timestamp;
+        boolean read;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_chat);
+
+        prefs = getSharedPreferences("papalegua", MODE_PRIVATE);
+        myId = prefs.getInt("userId", 0);
+        cookie = prefs.getString("cookie", "");
+
+        contactId = getIntent().getIntExtra("contactId", 0);
+        contactName = getIntent().getStringExtra("contactName");
+
+        tvContactName = findViewById(R.id.tvContactName);
+        tvContactName.setText(contactName);
+
+        tvConnectionStatus = findViewById(R.id.tvConnectionStatus);
+        tvConnectionStatus.setText("🟢 Conectado");
+        tvConnectionStatus.setTextColor(0xFF22c55e);
+
+        listView = findViewById(R.id.listView);
+        etMessage = findViewById(R.id.etMessage);
+        btnSend = findViewById(R.id.btnSend);
+        btnBack = findViewById(R.id.btnBack);
+        btnCall = findViewById(R.id.btnCall);
+        btnVideoCall = findViewById(R.id.btnVideoCall);
+        btnAudio = findViewById(R.id.btnAudio);
+
+        adapter = new MessageAdapter();
+        listView.setAdapter(adapter);
+
+        btnBack.setOnClickListener(v -> finish());
+
+        btnSend.setOnClickListener(v -> sendMessage());
+
+        btnCall.setOnClickListener(v -> {
+            Toast.makeText(this, "📞 Chamada de áudio iniciada", Toast.LENGTH_SHORT).show();
+        });
+
+        btnVideoCall.setOnClickListener(v -> {
+            Toast.makeText(this, "📹 Chamada de vídeo iniciada", Toast.LENGTH_SHORT).show();
+        });
+
+        btnAudio.setOnClickListener(v -> {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        loadMessages();
+    }
+
+    private void sendMessage() {
+        final String text = etMessage.getText().toString().trim();
+        if (text.isEmpty()) return;
+
+        etMessage.setText("");
+        btnSend.setEnabled(false);
+
+        new Thread(() -> {
+            try {
+                URL url = new URL("https://papalegua.duckdns.org/api/private-message");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Cookie", cookie);
+                conn.setDoOutput(true);
+
+                JSONObject json = new JSONObject();
+                json.put("toUserId", contactId);
+                json.put("text", text);
+                json.put("type", "text");
+
+                OutputStream os = conn.getOutputStream();
+                os.write(json.toString().getBytes());
+                os.flush();
+                os.close();
+
+                int responseCode = conn.getResponseCode();
+
+                runOnUiThread(() -> {
+                    btnSend.setEnabled(true);
+                    if (responseCode == 200 || responseCode == 201) {
+                        loadMessages();
+                    } else {
+                        Toast.makeText(this, "Erro ao enviar", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    btnSend.setEnabled(true);
+                    Toast.makeText(this, "Erro: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    private void startRecording() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 200);
+            return;
+        }
+
+        try {
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            mediaRecorder.setAudioSamplingRate(44100);
+            mediaRecorder.setAudioEncodingBitRate(128000);
+
+            String path = getExternalFilesDir(null).getAbsolutePath() + "/papalegua_audio_" + System.currentTimeMillis() + ".m4a";
+            currentAudioPath = path;
+            mediaRecorder.setOutputFile(path);
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+            isRecording = true;
+            btnAudio.setImageResource(android.R.drawable.ic_media_pause);
+            Toast.makeText(this, "🎤 Gravando...", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Erro ao gravar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void stopRecording() {
+        if (mediaRecorder != null) {
+            mediaRecorder.stop();
+            mediaRecorder.release();
+            mediaRecorder = null;
+            isRecording = false;
+            btnAudio.setImageResource(android.R.drawable.ic_media_play);
+            Toast.makeText(this, "⏹ Enviando áudio...", Toast.LENGTH_SHORT).show();
+            uploadAudioAndSend(currentAudioPath);
+        }
+    }
+
+    // Sobe o áudio gravado em pedaços pro /upload-chunk (mesmo protocolo usado
+    // pelo site), e quando terminar, cria a mensagem de áudio de verdade.
+    private void uploadAudioAndSend(String path) {
+        new Thread(() -> {
+            try {
+                File audioFile = new File(path);
+                byte[] fileBytes = new byte[(int) audioFile.length()];
+                FileInputStream fis = new FileInputStream(audioFile);
+                fis.read(fileBytes);
+                fis.close();
+
+                String fileId = UUID.randomUUID().toString();
+                String fileName = audioFile.getName();
+                int chunkSize = 200 * 1024; // 200KB por pedaço
+                int totalChunks = (int) Math.ceil((double) fileBytes.length / chunkSize);
+                String audioUrl = null;
+
+                for (int i = 0; i < totalChunks; i++) {
+                    int start = i * chunkSize;
+                    int end = Math.min(start + chunkSize, fileBytes.length);
+                    byte[] chunkBytes = new byte[end - start];
+                    System.arraycopy(fileBytes, start, chunkBytes, 0, end - start);
+                    String chunkB64 = Base64.encodeToString(chunkBytes, Base64.NO_WRAP);
+
+                    JSONObject json = new JSONObject();
+                    json.put("fileId", fileId);
+                    json.put("chunkIndex", i);
+                    json.put("totalChunks", totalChunks);
+                    json.put("fileName", fileName);
+                    json.put("fileSize", fileBytes.length);
+                    json.put("chunk", chunkB64);
+                    json.put("isPrivate", true);
+
+                    URL url = new URL("https://papalegua.duckdns.org/upload-chunk");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("Cookie", cookie);
+                    conn.setDoOutput(true);
+                    OutputStream os = conn.getOutputStream();
+                    os.write(json.toString().getBytes());
+                    os.flush();
+                    os.close();
+
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder resp = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) resp.append(line);
+                    br.close();
+
+                    JSONObject result = new JSONObject(resp.toString());
+                    if (result.has("url")) audioUrl = result.getString("url");
+                }
+
+                audioFile.delete();
+
+                if (audioUrl == null) {
+                    runOnUiThread(() -> Toast.makeText(this, "Erro ao enviar áudio", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+
+                // Agora cria a mensagem de áudio de verdade, igual ao texto
+                JSONObject msgJson = new JSONObject();
+                msgJson.put("toUserId", contactId);
+                msgJson.put("text", "");
+                msgJson.put("type", "audio");
+                msgJson.put("audioUrl", audioUrl);
+
+                URL msgUrl = new URL("https://papalegua.duckdns.org/api/private-message");
+                HttpURLConnection msgConn = (HttpURLConnection) msgUrl.openConnection();
+                msgConn.setRequestMethod("POST");
+                msgConn.setRequestProperty("Content-Type", "application/json");
+                msgConn.setRequestProperty("Cookie", cookie);
+                msgConn.setDoOutput(true);
+                OutputStream mos = msgConn.getOutputStream();
+                mos.write(msgJson.toString().getBytes());
+                mos.flush();
+                mos.close();
+
+                int msgResponseCode = msgConn.getResponseCode();
+                BufferedReader mbr = new BufferedReader(new InputStreamReader(
+                    msgResponseCode == 200 ? msgConn.getInputStream() : msgConn.getErrorStream()
+                ));
+                StringBuilder msgResp = new StringBuilder();
+                String mline;
+                while ((mline = mbr.readLine()) != null) msgResp.append(mline);
+                mbr.close();
+
+                if (msgResponseCode != 200) {
+                    JSONObject errJson = new JSONObject(msgResp.toString());
+                    String errMsg = errJson.optString("error", "Erro desconhecido (HTTP " + msgResponseCode + ")");
+                    runOnUiThread(() -> Toast.makeText(this, "Erro ao criar mensagem: " + errMsg, Toast.LENGTH_LONG).show());
+                    return;
+                }
+
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "🎤 Áudio enviado!", Toast.LENGTH_SHORT).show();
+                    loadMessages();
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this, "Erro ao enviar áudio: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            }
+        }).start();
+    }
+
+    private MediaPlayer playingAudio;
+    private String playingAudioUrl;
+
+    // Toca (ou para, se já estiver tocando o mesmo áudio) uma mensagem de voz recebida.
+    // Usa headers customizados no MediaPlayer pra mandar o cookie de sessão,
+    // já que o endpoint /private-download exige login.
+    private void playAudio(String relativeUrl) {
+        String fullUrl = "https://papalegua.duckdns.org" + relativeUrl;
+
+        if (playingAudio != null) {
+            boolean wasSameAudio = fullUrl.equals(playingAudioUrl);
+            playingAudio.release();
+            playingAudio = null;
+            playingAudioUrl = null;
+            if (wasSameAudio) return; // clicou de novo no mesmo áudio: só para
+        }
+
+        try {
+            playingAudioUrl = fullUrl;
+            playingAudio = new MediaPlayer();
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Cookie", cookie);
+            playingAudio.setDataSource(this, android.net.Uri.parse(fullUrl), headers);
+            playingAudio.setOnPreparedListener(MediaPlayer::start);
+            playingAudio.setOnCompletionListener(mp -> {
+                mp.release();
+                playingAudio = null;
+                playingAudioUrl = null;
+            });
+            playingAudio.prepareAsync();
+            Toast.makeText(this, "▶️ Tocando áudio...", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Erro ao tocar áudio: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (playingAudio != null) {
+            playingAudio.release();
+            playingAudio = null;
+        }
+    }
+
+    private void loadMessages() {
+        new Thread(() -> {
+            try {
+                URL url = new URL("https://papalegua.duckdns.org/api/private-messages?withUserId=" + contactId);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Cookie", cookie);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 401) {
+                    runOnUiThread(() -> {
+                        prefs.edit().clear().apply();
+                        finish();
+                    });
+                    return;
+                }
+
+                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) response.append(line);
+                br.close();
+
+                JSONArray jsonMsgs = new JSONArray(response.toString());
+                messages.clear();
+
+                for (int i = 0; i < jsonMsgs.length(); i++) {
+                    JSONObject m = jsonMsgs.getJSONObject(i);
+                    MessageItem msg = new MessageItem();
+                    msg.id = m.getInt("id");
+                    msg.fromUserId = m.getInt("from_user_id");
+                    msg.toUserId = m.getInt("to_user_id");
+                    msg.text = m.getString("text");
+                    msg.type = m.getString("type");
+                    msg.timestamp = System.currentTimeMillis();
+                    msg.read = m.optBoolean("read", false);
+                    if (m.has("url")) msg.url = m.getString("url");
+                    if (m.has("audio_url")) msg.audioUrl = m.getString("audio_url");
+                    if (m.has("name")) msg.name = m.getString("name");
+                    messages.add(msg);
+                }
+
+                runOnUiThread(() -> {
+                    adapter.notifyDataSetChanged();
+                    listView.setSelection(messages.size() - 1);
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Erro ao carregar mensagens", Toast.LENGTH_SHORT).show();
+                });
+            }
+        }).start();
+    }
+
+    class MessageAdapter extends BaseAdapter {
+        private LayoutInflater inflater;
+
+        MessageAdapter() {
+            inflater = LayoutInflater.from(ChatActivity.this);
+        }
+
+        @Override
+        public int getCount() { return messages.size(); }
+
+        @Override
+        public Object getItem(int position) { return messages.get(position); }
+
+        @Override
+        public long getItemId(int position) { return messages.get(position).id; }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder;
+            if (convertView == null) {
+                convertView = inflater.inflate(R.layout.item_message, parent, false);
+                holder = new ViewHolder();
+                holder.llMessage = convertView.findViewById(R.id.llMessage);
+                holder.tvText = convertView.findViewById(R.id.tvText);
+                holder.tvTime = convertView.findViewById(R.id.tvTime);
+                holder.tvRead = convertView.findViewById(R.id.tvRead);
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            MessageItem msg = messages.get(position);
+            boolean isMe = msg.fromUserId == myId;
+
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) holder.llMessage.getLayoutParams();
+            if (isMe) {
+                params.gravity = android.view.Gravity.END;
+                holder.llMessage.setBackgroundResource(R.drawable.bg_message_me);
+            } else {
+                params.gravity = android.view.Gravity.START;
+                holder.llMessage.setBackgroundResource(R.drawable.bg_message_other);
+            }
+            holder.llMessage.setLayoutParams(params);
+
+            String displayText = msg.text;
+            if (msg.type.equals("audio")) {
+                displayText = "🎤 Áudio (toque pra ouvir)";
+                holder.tvText.setOnClickListener(v -> {
+                    if (msg.audioUrl != null) playAudio(msg.audioUrl);
+                });
+            } else if (msg.type.equals("file")) {
+                displayText = "📎 " + (msg.name != null ? msg.name : "Arquivo");
+                holder.tvText.setOnClickListener(null);
+            } else {
+                holder.tvText.setOnClickListener(null);
+            }
+            holder.tvText.setText(displayText);
+
+            holder.tvTime.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(msg.timestamp)));
+
+            if (isMe) {
+                holder.tvRead.setText(msg.read ? "✓✓" : "✓");
+                holder.tvRead.setTextColor(msg.read ? 0xFFd4af37 : 0xFF94a3b8);
+                holder.tvRead.setVisibility(View.VISIBLE);
+            } else {
+                holder.tvRead.setVisibility(View.GONE);
+            }
+
+            return convertView;
+        }
+
+        class ViewHolder {
+            LinearLayout llMessage;
+            TextView tvText;
+            TextView tvTime;
+            TextView tvRead;
+        }
+    }
+}
