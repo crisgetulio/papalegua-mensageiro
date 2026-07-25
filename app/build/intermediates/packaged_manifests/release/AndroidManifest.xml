@@ -31,7 +31,9 @@
         android:allowBackup="true"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:extractNativeLibs="false"
+        android:icon="@drawable/ic_launcher"
         android:label="Papalegua"
+        android:roundIcon="@drawable/ic_launcher_round"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar"
         android:usesCleartextTraffic="true" >
         <activity

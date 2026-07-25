@@ -8,6 +8,8 @@ drawable bg_message_other
 drawable ic_avatar
 drawable ic_launcher
 drawable ic_launcher_round
+drawable ic_mic_idle
+drawable ic_mic_recording
 id btnAudio
 id btnBack
 id btnCall

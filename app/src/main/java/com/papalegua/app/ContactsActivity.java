@@ -183,7 +183,7 @@ public class ContactsActivity extends AppCompatActivity {
                     JSONObject u = users.getJSONObject(i);
                     contacts.add(new Contact(
                         u.getString("id"),
-                        u.getString("username"),
+                        u.isNull("username") ? "Usuário sem nome" : u.getString("username"),
                         u.optString("avatar_url", "")
                     ));
                 }

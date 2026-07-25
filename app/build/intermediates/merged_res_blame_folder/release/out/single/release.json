@@ -28,12 +28,20 @@
         "source": "com.papalegua.app-main-6:/drawable/bg_edit.xml"
     },
     {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_ic_mic_idle.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/ic_mic_idle.xml"
+    },
+    {
         "merged": "com.papalegua.app-merged_res-5:/layout_activity_chat.xml.flat",
         "source": "com.papalegua.app-main-6:/layout/activity_chat.xml"
     },
     {
         "merged": "com.papalegua.app-merged_res-5:/drawable_bg_message_me.xml.flat",
         "source": "com.papalegua.app-main-6:/drawable/bg_message_me.xml"
+    },
+    {
+        "merged": "com.papalegua.app-merged_res-5:/drawable_ic_mic_recording.xml.flat",
+        "source": "com.papalegua.app-main-6:/drawable/ic_mic_recording.xml"
     },
     {
         "merged": "com.papalegua.app-merged_res-5:/layout_item_message.xml.flat",

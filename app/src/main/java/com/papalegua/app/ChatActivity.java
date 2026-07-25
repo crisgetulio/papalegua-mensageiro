@@ -285,7 +285,7 @@ public class ChatActivity extends AppCompatActivity {
             mediaRecorder.prepare();
             mediaRecorder.start();
             isRecording = true;
-            btnAudio.setImageResource(android.R.drawable.ic_media_pause);
+            btnAudio.setImageResource(R.drawable.ic_mic_recording);
             Toast.makeText(this, "Gravando...", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(this, "Erro ao gravar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -300,7 +300,7 @@ public class ChatActivity extends AppCompatActivity {
             mediaRecorder.release();
             mediaRecorder = null;
             isRecording = false;
-            btnAudio.setImageResource(android.R.drawable.ic_media_play);
+            btnAudio.setImageResource(R.drawable.ic_mic_idle);
             Toast.makeText(this, "Enviando audio...", Toast.LENGTH_SHORT).show();
             encryptAndSendAudio(currentAudioPath);
         }

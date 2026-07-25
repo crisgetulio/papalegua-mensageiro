@@ -45,7 +45,7 @@
         android:padding="8dp" android:background="#0d1117">
 
         <ImageButton android:id="@+id/btnAudio" android:layout_width="wrap_content"
-            android:layout_height="wrap_content" android:src="@android:drawable/ic_media_play"
+            android:layout_height="wrap_content" android:src="@drawable/ic_mic_idle"
             android:background="@null" android:padding="8dp"
             android:layout_marginEnd="4dp"/>
 
